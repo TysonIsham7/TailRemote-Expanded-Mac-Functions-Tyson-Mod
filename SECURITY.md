@@ -6,11 +6,9 @@ TailRemote is an early-stage project. Security fixes are made on the latest `mai
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a vulnerability involving credentials, authentication, network access, or remote input.
+Do not publish exploit details, passwords, private keys, authentication tokens, network addresses, or tailnet names.
 
-Use GitHub's **Security → Report a vulnerability** flow. If private vulnerability reporting is unavailable, contact the maintainer privately through the GitHub profile rather than publishing exploit details.
-
-Include the affected commit, iOS and macOS versions, connection method, reproduction steps, and the security impact. Do not include real passwords, private keys, authentication tokens, Tailscale IP addresses, or tailnet hostnames.
+This fork does not run a vulnerability inbox, and it does not pass reports on to the original project. Keep the details off public pages.
 
 ## Threat model
 

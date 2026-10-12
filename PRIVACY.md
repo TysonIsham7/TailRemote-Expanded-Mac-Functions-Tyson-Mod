@@ -55,4 +55,4 @@ We may update this policy when the app’s data practices change. The effective 
 
 ## Contact
 
-Questions about this policy or TailRemote privacy: **hello@catalinwaack.com** (Waack International LLC).
+This fork does not publish a contact address. The data practices above are the ones described by the upstream app.

@@ -1,5 +1,7 @@
 # TestFlight and App Store prep (Waack International LLC)
 
+These notes describe how the upstream app was prepared. This fork does not include a signing team. Its Xcode project uses the placeholder bundle ID `com.example.tailremote`.
+
 Bundle ID: `com.waack.TailRemote`  
 Version: `1.0.0` (build `1`)  
 Team: Waack International LLC (paid Apple Developer)

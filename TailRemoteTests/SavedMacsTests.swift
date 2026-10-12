@@ -32,13 +32,13 @@ final class SavedMacsTests: XCTestCase {
 
     func testImportKeepsExistingCredentialKeyAndAccountAcrossAliases() async throws {
         let store = SavedMacs(defaults: defaults)
-        store.remember(hostname: "100.64.0.1", username: "saved-user")
-        let imported = SavedMac(hostname: "mac.test.invalid", name: "My Mac", username: "import-user", aliases: ["100.64.0.1", "mac"])
+        store.remember(hostname: "saved-host.invalid", username: "saved-user")
+        let imported = SavedMac(hostname: "mac.test.invalid", name: "My Mac", username: "import-user", aliases: ["saved-host.invalid", "mac"])
         try store.importMacs(data([imported]))
         try store.importMacs(data([imported]))
         XCTAssertEqual(store.macs.count, 1)
         let mac = try XCTUnwrap(store.matching("mac.test.invalid"))
-        XCTAssertEqual(mac.hostname, "100.64.0.1")
+        XCTAssertEqual(mac.hostname, "saved-host.invalid")
         XCTAssertEqual(mac.username, "saved-user")
         XCTAssertEqual(mac.name, "My Mac")
         XCTAssertEqual(store.matching("mac"), mac)
