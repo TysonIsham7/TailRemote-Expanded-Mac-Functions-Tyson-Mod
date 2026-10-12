@@ -5,143 +5,131 @@
 <h1 align="center">TailRemote</h1>
 
 <p align="center">
-  A direct, private iPhone remote for your Mac.
+  A fork of <a href="https://github.com/C4T4/TailRemote">C4T4/TailRemote</a> by Catalin Waack.
 </p>
 
-<p align="center">
-  <img src="Assets/Brand/tailremote-hero.png" alt="TailRemote connecting an iPhone to a Mac">
-</p>
+This repository is a GitHub fork of [C4T4/TailRemote](https://github.com/C4T4/TailRemote) by Catalin Waack. His app is the whole foundation: a direct, private iPhone client that controls a Mac through macOS Screen Sharing, with no relay and no account. It is MIT licensed, and the copyright in [LICENSE](LICENSE) stays his. I am new to open source. This fork does not replace his project. It keeps that work and adds the phone controls I wanted while I was away from my Mac.
 
-TailRemote is a small, open-source iPhone client for controlling a Mac through macOS Screen Sharing over Tailscale. It connects directly to the Mac: there is no relay, hosted service, account system, or companion app.
+## Who this is for
 
-> TailRemote is an early MVP intended for personal use on a trusted tailnet.
+This is for anybody who wants to be able to do things on their Mac while they are remote and away from it.
 
-## Features
+You stay on your iPhone. The Mac stays where it is. Tailscale carries the connection, and Screen Sharing is what you sign in to.
+
+## What Catalin's app already does
 
 - Apple Screen Sharing authentication through RoyalVNCKit
-- Live remote framebuffer with a local pointer
-- Relative touchpad-style pointer control, clicks, dragging, and scrolling
-- Visible click pulses at the remote pointer, including double clicks and right clicks
-- Pinch zoom from 1× to 4× with manual panning and cursor edge-following
-- iOS keyboard input plus Escape, Tab, and right-click shortcuts
-- Saved Mac picker with a remembered username per Mac and passwords in the iPhone Keychain
-- Import Mac names and addresses from Tailscale without an API key
+- A live picture of the Mac, with a pointer drawn on the phone
+- Touchpad-style movement, clicks, dragging, and two-finger scrolling
+- Click pulses, including double-clicks and right-clicks
+- Pinch zoom from 1× to 4×, with panning and cursor edge-following
+- A saved Mac list, a username remembered per Mac, and passwords in the iPhone Keychain
+- A way to import Mac names from Tailscale on your Mac, without an API key
 
-## Quick start
+## What this fork adds
 
-You need a Mac, an iPhone with iOS 17+, Xcode, and [Tailscale](https://tailscale.com/download) on both devices.
+- Desktop space switching: **Prev** and **Next** send Control-Left and Control-Right, and **Desks** sends Control-Up
+- One-finger scroll, turned on with the **Scroll** button
+- Modifier keys: Command, Option, Control, and Shift stay down until the next key
+- Lowercase typing, so the phone keyboard does not force a capital letter
+- A backspace fix, so one delete on the phone is one delete on the Mac
+- Centered screen fitting, so the Mac picture sits in the open part of the phone and moves only when the keyboard or the full control bar covers the bottom
+- A **Keys** row for shortcuts, arrows, Esc, Tab, and a right-click
+- A **Hide** button that tucks the controls away
+- Double-tap-drag select: double-tap, then drag within about half a second, to select
 
-1. On your Mac, open **System Settings → General → Sharing** and enable **Screen Sharing**.
-2. Clone and open TailRemote:
+## Prerequisites
 
-   ```sh
-   git clone https://github.com/C4T4/TailRemote.git
-   open TailRemote/TailRemote.xcodeproj
-   ```
+You need:
 
-3. Connect your iPhone. In **Signing & Capabilities**, choose your Personal Team and set a unique bundle ID.
-4. Select your iPhone in Xcode and press **Run**.
-5. Choose your Mac from the picker, or use **Add a Mac** to enter its Tailscale address and macOS username. Enter your login password once.
+- a Mac with Apple silicon
+- an iPhone
+- the latest OS on both
+- [Tailscale](https://tailscale.com/download) on both, connected to the same tailnet
+- an Xcode build signed with your own team
+- Developer Mode turned on for the iPhone
+- approval for the Tailscale VPN (and the local-network prompt, if iOS asks)
 
-**Remember password** is on by default. Sign in once to save it securely on this
-iPhone; the matching Mac and username will have the password filled in next time,
-including after closing the app. Turn the toggle off to remove that saved password.
+On the Mac, turn on **System Settings → General → Sharing → Screen Sharing**.
 
-### Import Macs from Tailscale
+`com.example.tailremote` is a placeholder bundle ID, not an ID you should ship. Before you install, change `TAILREMOTE_BUNDLE_IDENTIFIER` in [`project.yml`](project.yml) to an ID you control, then run `xcodegen generate` (or set the same ID in Signing & Capabilities). Choose your own team there. No Apple development team is stored in this project. Do not set a global `PRODUCT_BUNDLE_IDENTIFIER` override, because Xcode also applies that override to embedded frameworks and iOS then rejects the duplicate IDs.
 
-On your Mac, with Tailscale connected, run:
+## Setup
+
+```sh
+git clone https://github.com/TysonIsham7/TailRemote-Expanded-Mac-Functions-Tyson-Mod.git
+open TailRemote-Expanded-Mac-Functions-Tyson-Mod/TailRemote.xcodeproj
+```
+
+Select your iPhone and press Run. The shared scheme uses **Release** for Run so Screen Sharing authentication and screen decoding stay fast. Tests use **Debug**.
+
+Add your Mac with its Tailscale address and the macOS username from `whoami`. **Remember password** is on by default and stores that password in the iPhone Keychain for that Mac, port, and username. It stays on that phone, does not sync through iCloud, and is removed if you turn the toggle off.
+
+To fill the Mac list from the Mac itself, with Tailscale connected:
 
 ```sh
 python3 scripts/export-tailscale-macs.py ~/Downloads/TailscaleMacs.json
 ```
 
-Transfer that file to your iPhone and choose **Import Tailscale Macs** in the Mac
-picker. It contains Mac names and private addresses, plus the current Mac's local
-username, with no passwords or tokens. The picker remembers the imported devices;
-export and import again to update it. This is a saved list, not live discovery from
-the separate Tailscale iOS app. TailRemote never guesses another Mac's username.
+Move that file to the iPhone and use **Import Tailscale Macs**. It holds names and addresses, not passwords. Keep the file out of the repository.
 
-For a connected development phone, the export can also be copied into the app's
-Documents folder as `TailscaleMacs.json` with `devicectl device copy to` using the
-`appDataContainer` domain and your app's bundle ID. The next launch imports the file
-and removes that temporary copy. Keep exports outside the repository.
+Paste this repo link into any AI assistant like ChatGPT and it will walk you through setup one step at a time. More advanced agents can do much of the setup for you.
 
-The shared TailRemote scheme uses **Release** for Run so Screen Sharing authentication
-and screen decoding use optimized dependencies on your iPhone. Tests use **Debug**.
-If you change Run to Debug for development, switch back to Release before comparing
-connection speed or using the app regularly.
+## Devices
 
-## Problems?
+I have tested it only on Apple Silicon Macs and iPhone 16 or newer, on the latest developer betas. I can't personally test other devices. Everything else below is untested.
 
-- Signing error: choose your Personal Team and change the bundle ID.
-- Cannot connect: check Tailscale and Screen Sharing.
-- Login fails: run `whoami` on your Mac and use that username.
-- Startup now distinguishes **Connecting**, **Signing in**, and **Loading desktop**.
-  It reports **Connected** when the first desktop image is available. Local console
-  timings record these stages without hostnames, usernames, or passwords.
+As of 12 October 2026, the current developer betas are iOS 27.2 beta 3 (build 24B5099f, 5 October 2026), macOS 27.2 beta 3 (5 October 2026), and Xcode 27.2 beta 2, which asks for macOS Tahoe 26.6 or later. That Xcode still debugs on-device builds for iOS 17 and later, and it still accepts the Swift 5 language mode this project sets. Those are the only devices I have tried.
+
+The numbers below come from the project, not from extra devices:
+
+- The iOS deployment target is 17.0. `UITextField.inlinePredictionType`, which the lowercase keyboard uses, requires iOS 17 and is called with no availability check. iOS 16 and earlier cannot build this tree as it stands.
+- The app target is iPhone only (`TARGETED_DEVICE_FAMILY` 1). Mac Catalyst is off. iPad is not a destination of this target.
+- There is no macOS deployment target. The Mac is the Screen Sharing computer, not a built app. macOS 27 Golden Gate lists Apple silicon Macs from 2020 on.
+- iPhone 16 models shipped with iOS 18, so they cannot go back to iOS 17. Only the current developer beta was tested on them.
+- iPhone XS, iPhone XS Max, iPhone XR, and later phones can run iOS 17. They fall inside the deployment target. They are untested.
+- Older Macs, Intel Macs, iPads, and phones that stop at iOS 16 are outside what this tree is set up to build or what I have tried.
+
+If your devices aren't compatible, fork this repo and have your own agents make it work for your devices. An iPad layout, an older iPhone, or a Mac I have not used is a real next step, not a dead end. Treat each incompatible device as a contribution waiting for its own fork.
 
 ## Controls
 
-| Gesture | Action |
+| Gesture or button | Action |
 | --- | --- |
 | One-finger drag | Move the pointer |
+| **Scroll**, then one-finger drag | Scroll the Mac |
 | Tap / double-tap | Click / double-click |
+| Double-tap, then drag | Select, while the drag starts within about half a second |
 | Hold still for about half a second, then drag | Drag a window, slider, or item |
 | Two-finger tap | Right-click |
 | Two-finger drag at 1× | Scroll the Mac |
 | Pinch | Zoom from 1× to 4× |
 | Two-finger drag while zoomed | Pan around the desktop |
+| **Prev** / **Next** | Previous or next desktop |
+| **Desks** | Mission Control |
+| **Keys** | Command, Option, Control, Shift, and the shortcut row |
+| **Hide** | Hide the controls |
 
-While zoomed, moving the pointer near an edge automatically follows it around the desktop.
-Pointer movement keeps the same on-screen sensitivity at every zoom level.
+While zoomed, moving the pointer near an edge follows it across the desktop. Pointer sensitivity stays the same at every zoom level.
+
+## Limitations
+
+- There is no Mac-to-iPhone audio routing.
+- Remote Passkeys will not trigger Face ID on the phone. Approve those on the Mac, or with whatever that Mac already uses.
+- Tailscale imports are a saved snapshot. They do not refresh by themselves.
+- Screen Sharing does not list Mac accounts before you sign in.
+- There is no file transfer.
 
 ## Security model
 
-- Tailscale provides private network reachability; it does not replace Screen Sharing authentication.
-- TailRemote sends credentials only to the selected Screen Sharing server during the authentication handshake.
-- The host and username are stored in iOS `UserDefaults` for convenience.
-- With **Remember password** enabled, a successful sign-in saves the password in
-  the iPhone Keychain for that host, port, and username. It is available only while
-  the device is unlocked and does not sync to iCloud or migrate to another device.
-- Passwords are never stored in `UserDefaults`, logs, or the repository. The active
-  session's in-memory password is cleared on disconnect. Turning off **Remember
-  password** removes the saved password for the selected Mac and account.
-- TailRemote does not open ports, operate a relay, collect analytics, or send telemetry.
+Tailscale gets you to the Mac. It does not replace Screen Sharing's own sign-in. The password goes only to the Mac you selected, and only for that handshake. The host and username are kept in `UserDefaults`. A remembered password is a Keychain item available only while this iPhone is unlocked.
 
-Only connect to Macs and networks you trust. See [SECURITY.md](SECURITY.md) for reporting vulnerabilities and the supported threat model.
-
-## TestFlight / App Store
-
-Distribution under Waack International LLC uses bundle ID `com.waack.TailRemote`. See [TESTFLIGHT.md](TESTFLIGHT.md) and [PRIVACY.md](PRIVACY.md). Hosted policy: https://c4t4.github.io/TailRemote/privacy/
-
-## Development
-
-The generated Xcode project is committed so contributors can build immediately. [`project.yml`](project.yml) is its source of truth.
-
-```sh
-brew install xcodegen
-xcodegen generate
-xcodebuild -project TailRemote.xcodeproj \
-  -scheme TailRemote \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-  test
-```
-
-RoyalVNCKit is pinned to a tested revision in `project.yml` and `Package.resolved`. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for dependency licenses.
-
-## Known limitations
-
-- Tailscale device imports are snapshots and do not refresh automatically
-- No remote user discovery; Screen Sharing does not expose account names before authentication
-- No audio or file transfer
-- Keyboard support focuses on text entry and a small set of special keys
-
-## Contributing
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Please keep the app direct, private, and deliberately small.
+Only connect to Macs and networks you trust. Do not publish port 5900 on the public internet. See [SECURITY.md](SECURITY.md) for the threat model.
 
 ## License
 
 TailRemote is available under the [MIT License](LICENSE).
 
-TailRemote is not affiliated with or endorsed by Tailscale Inc. or Apple Inc. Tailscale and Apple product names are trademarks of their respective owners.
+Copyright (c) 2026 Catalin Waack.
+
+Tailscale and Apple product names are trademarks of their respective owners.
