@@ -376,7 +376,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
-				TAILREMOTE_BUNDLE_IDENTIFIER = com.waack.TailRemote;
+				TAILREMOTE_BUNDLE_IDENTIFIER = com.example.tailremote;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -408,7 +408,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
-				TAILREMOTE_BUNDLE_IDENTIFIER = com.waack.TailRemote;
+				TAILREMOTE_BUNDLE_IDENTIFIER = com.example.tailremote;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
@@ -423,7 +423,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.waack.TailRemoteTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.tailremote.tests;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -497,7 +497,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.waack.TailRemoteUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.tailremote.uitests;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -515,7 +515,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.waack.TailRemoteUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.tailremote.uitests;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -533,7 +533,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.waack.TailRemoteTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.tailremote.tests;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

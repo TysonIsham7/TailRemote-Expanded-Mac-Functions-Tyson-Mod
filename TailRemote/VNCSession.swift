@@ -166,19 +166,26 @@ final class VNCSession: NSObject, ObservableObject, VNCConnectionDelegate, Remot
         )
     }
 
-    func sendText(_ text: String) {
+    func sendText(_ text: String, modifiers: [VNCKeyCode] = []) {
         for character in text {
             if character.isNewline {
-                pressKey(.return)
+                pressKey(.return, modifiers: modifiers)
             } else {
-                VNCKeyCode.withCharacter(character).forEach(pressKey)
+                VNCKeyCode.withCharacter(character).forEach { pressKey($0, modifiers: modifiers) }
             }
         }
     }
 
-    func pressKey(_ key: VNCKeyCode) {
-        connection?.keyDown(key)
-        connection?.keyUp(key)
+    func pressKey(_ key: VNCKeyCode, modifiers: [VNCKeyCode] = []) {
+        guard let connection else { return }
+        var held: [VNCKeyCode] = []
+        for modifier in modifiers where !held.contains(modifier) {
+            held.append(modifier)
+            connection.keyDown(modifier)
+        }
+        connection.keyDown(key)
+        connection.keyUp(key)
+        held.reversed().forEach { connection.keyUp($0) }
     }
 
     private func initializeCursorIfNeeded() {

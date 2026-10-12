@@ -1,10 +1,19 @@
 import CoreGraphics
 
+enum RemoteVerticalPlacement {
+    case center
+    case bottom
+}
+
 enum RemoteGeometry {
     static let minimumZoomScale: CGFloat = 1
     static let maximumZoomScale: CGFloat = 4
 
-    static func aspectFitRect(imageSize: CGSize, in bounds: CGRect) -> CGRect {
+    static func aspectFitRect(
+        imageSize: CGSize,
+        in bounds: CGRect,
+        placement: RemoteVerticalPlacement = .center
+    ) -> CGRect {
         guard imageSize.width > 0,
               imageSize.height > 0,
               bounds.width > 0,
@@ -14,10 +23,16 @@ enum RemoteGeometry {
 
         let scale = min(bounds.width / imageSize.width, bounds.height / imageSize.height)
         let size = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        let y: CGFloat = switch placement {
+        case .center:
+            bounds.midY - size.height / 2
+        case .bottom:
+            bounds.maxY - size.height
+        }
 
         return CGRect(
             x: bounds.midX - size.width / 2,
-            y: bounds.midY - size.height / 2,
+            y: y,
             width: size.width,
             height: size.height
         )

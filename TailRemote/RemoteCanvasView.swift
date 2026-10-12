@@ -23,6 +23,9 @@ protocol RemoteCanvasInput: AnyObject {
 
 struct RemoteCanvasView: UIViewRepresentable {
     @ObservedObject var session: VNCSession
+    var bottomInset: CGFloat = 0
+    var pinsContentToBottom = false
+    var scrollMode = false
 
     func makeUIView(context: Context) -> RemoteCanvasUIView {
         let view = RemoteCanvasUIView()
@@ -32,6 +35,9 @@ struct RemoteCanvasView: UIViewRepresentable {
 
     func updateUIView(_ view: RemoteCanvasUIView, context: Context) {
         view.session = session
+        view.bottomInset = bottomInset
+        view.pinsContentToBottom = pinsContentToBottom
+        view.scrollMode = scrollMode
         view.update(
             image: session.framebufferImage,
             framebufferSize: session.framebufferSize,
@@ -63,11 +69,24 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     private var zoomScale = RemoteGeometry.minimumZoomScale
     private var panOffset: CGPoint = .zero
     private var isPinching = false
+    private var selectionDragActive = false
+    private var selectionDragArmedUntil: TimeInterval = 0
+    private var scrollRemainder: CGPoint = .zero
+
+    var bottomInset: CGFloat = 0
+    var pinsContentToBottom = false
+    var scrollMode = false
+
+    private var contentBounds: CGRect {
+        let inset = min(max(bottomInset, 0), max(bounds.height - 1, 0))
+        return bounds.inset(by: UIEdgeInsets(top: 0, left: 0, bottom: inset, right: 0))
+    }
 
     private var interactionViewport: CGRect {
-        let horizontalInset = min(56, bounds.width * 0.15)
-        let verticalInset = min(88, bounds.height * 0.15)
-        return bounds.insetBy(dx: horizontalInset, dy: verticalInset)
+        let area = contentBounds
+        let horizontalInset = min(56, area.width * 0.15)
+        let verticalInset = min(88, area.height * 0.15)
+        return area.insetBy(dx: horizontalInset, dy: verticalInset)
     }
 
     override init(frame: CGRect) {
@@ -132,7 +151,7 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
-        let baseImageRect = RemoteGeometry.aspectFitRect(imageSize: framebufferSize, in: bounds)
+        let baseImageRect = fittedImageRect()
         panOffset = RemoteGeometry.clampedPanOffset(
             panOffset,
             baseRect: baseImageRect,
@@ -248,6 +267,7 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
 
     @objc private func handleDoubleTap() {
         session?.click(.left, count: 2)
+        selectionDragArmedUntil = CACurrentMediaTime() + 0.55
     }
 
     @objc private func handleRightClick() {
@@ -255,10 +275,31 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func handleMove(_ gesture: UIPanGestureRecognizer) {
-        guard gesture.state == .began || gesture.state == .changed else { return }
-        let translation = gesture.translation(in: self)
-        gesture.setTranslation(.zero, in: self)
-        moveRemotePointer(by: translation)
+        switch gesture.state {
+        case .began, .changed:
+            let translation = gesture.translation(in: self)
+            gesture.setTranslation(.zero, in: self)
+            if gesture.state == .began, CACurrentMediaTime() < selectionDragArmedUntil {
+                selectionDragArmedUntil = 0
+                selectionDragActive = true
+                session?.mouseDown(.left)
+            }
+            if selectionDragActive {
+                moveRemotePointer(by: translation)
+            } else if scrollMode {
+                scrollByDrag(translation)
+            } else {
+                moveRemotePointer(by: translation)
+            }
+        case .ended, .cancelled, .failed:
+            scrollRemainder = .zero
+            if selectionDragActive {
+                session?.mouseUp(.left)
+                selectionDragActive = false
+            }
+        default:
+            break
+        }
     }
 
     @objc private func handleDrag(_ gesture: UILongPressGestureRecognizer) {
@@ -297,7 +338,7 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         }
 
         if zoomScale > RemoteGeometry.minimumZoomScale {
-            let baseImageRect = RemoteGeometry.aspectFitRect(imageSize: framebufferSize, in: bounds)
+            let baseImageRect = fittedImageRect()
             panOffset = RemoteGeometry.clampedPanOffset(
                 CGPoint(x: panOffset.x + translation.x, y: panOffset.y + translation.y),
                 baseRect: baseImageRect,
@@ -323,7 +364,7 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         case .changed:
             let oldScale = zoomScale
             let newScale = RemoteGeometry.clampedZoomScale(oldScale * gesture.scale)
-            let baseImageRect = RemoteGeometry.aspectFitRect(imageSize: framebufferSize, in: bounds)
+            let baseImageRect = fittedImageRect()
 
             panOffset = RemoteGeometry.panOffsetKeepingFocalPointStable(
                 currentOffset: panOffset,
@@ -353,9 +394,35 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         }
     }
 
+    private func fittedImageRect() -> CGRect {
+        RemoteGeometry.aspectFitRect(
+            imageSize: framebufferSize,
+            in: contentBounds,
+            placement: pinsContentToBottom ? .bottom : .center
+        )
+    }
+
+    private func scrollByDrag(_ translation: CGPoint) {
+        scrollRemainder.x += translation.x
+        scrollRemainder.y += translation.y
+        let vertical = abs(scrollRemainder.y) >= abs(scrollRemainder.x)
+        let distance = vertical ? scrollRemainder.y : scrollRemainder.x
+        guard abs(distance) >= 10 else { return }
+        let wheel: VNCMouseWheel
+        if vertical {
+            wheel = distance < 0 ? .down : .up
+            scrollRemainder.y = 0
+        } else {
+            wheel = distance < 0 ? .right : .left
+            scrollRemainder.x = 0
+        }
+        let steps = UInt32(min(max(Int(abs(distance) / 10), 1), 6))
+        session?.scroll(wheel, steps: steps)
+    }
+
     private func moveRemotePointer(by delta: CGPoint) {
         guard let session else { return }
-        let baseImageRect = RemoteGeometry.aspectFitRect(imageSize: framebufferSize, in: bounds)
+        let baseImageRect = fittedImageRect()
         session.movePointer(viewDelta: delta, viewSize: baseImageRect.size, zoomScale: zoomScale)
         cursorPoint = session.cursorPoint
 

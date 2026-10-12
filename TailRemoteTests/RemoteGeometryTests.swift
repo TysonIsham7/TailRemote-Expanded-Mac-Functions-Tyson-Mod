@@ -14,6 +14,35 @@ final class RemoteGeometryTests: XCTestCase {
         XCTAssertEqual(rect.midY, 422, accuracy: 0.001)
     }
 
+    func testKeyboardInsetPinsTheDesktopAboveTheKeyboard() {
+        let screen = CGRect(x: 0, y: 0, width: 390, height: 844)
+        let covered: CGFloat = 360
+        let visible = screen.inset(by: UIEdgeInsets(top: 0, left: 0, bottom: covered, right: 0))
+        let rect = RemoteGeometry.aspectFitRect(
+            imageSize: CGSize(width: 1920, height: 1080),
+            in: visible,
+            placement: .bottom
+        )
+
+        XCTAssertEqual(rect.maxY, visible.maxY, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(rect.maxY, screen.height - covered + 0.001)
+        XCTAssertEqual(rect.width, visible.width, accuracy: 0.001)
+    }
+
+    func testCenteredInsetKeepsTheDesktopInTheOpenArea() {
+        let screen = CGRect(x: 0, y: 0, width: 390, height: 844)
+        let covered: CGFloat = 360
+        let visible = screen.inset(by: UIEdgeInsets(top: 0, left: 0, bottom: covered, right: 0))
+        let rect = RemoteGeometry.aspectFitRect(
+            imageSize: CGSize(width: 1920, height: 1080),
+            in: visible
+        )
+
+        XCTAssertEqual(rect.midY, visible.midY, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(rect.maxY, screen.height - covered + 0.001)
+        XCTAssertGreaterThanOrEqual(rect.minY, 0)
+    }
+
     func testClampKeepsPointerInsideFramebuffer() {
         let point = RemoteGeometry.clamp(
             CGPoint(x: -20, y: 1400),
