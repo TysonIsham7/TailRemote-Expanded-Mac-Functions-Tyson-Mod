@@ -37,3 +37,14 @@ for the selected Mac/account. Failed sign-ins do not overwrite a saved password.
 Passwords are never stored in `UserDefaults`, logs, analytics, or the repository.
 The active session's in-memory password is cleared on disconnect. Keychain errors
 are shown without including the password, account, or host in diagnostics.
+
+## Accepted limitations
+
+This publication does not claim the client is free of vulnerabilities. The following inherited behavior is unchanged and is accepted for this snapshot:
+
+- Security-type selection prefers None when the server offers it, before Apple Remote Desktop (the type this client implements as type 30), UltraVNC MS-Logon, and classic VNC.
+- TLS and VeNCrypt are not selected. There is no separate TLS wrapper around the connection.
+- Classic VNC authentication uses that protocol's DES challenge.
+- Clipboard redirection is enabled. Remote clipboard text can be written to the iPhone pasteboard, and iPhone pasteboard text can be sent to the Mac.
+
+Saved passwords stay in the on-device Keychain described above. Connection logs record status and desktop size, not the password. These statements are the accepted limits of this tree. They are not a security proof, and they are not a claim that the behavior was fixed.

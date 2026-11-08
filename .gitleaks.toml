@@ -1,0 +1,19 @@
+title = "TailRemote gitleaks config"
+
+[extend]
+useDefault = true
+
+# Six RoyalVNC key-code constants that the generic-api-key rule misreads.
+# Each regex matches one full line exactly (only surrounding whitespace and the line break are tolerated), so any other text on that line
+# (such as a real key) is still reported. No path allowlist.
+[allowlist]
+description = "RoyalVNC X11 key-symbol constants (exact lines)"
+regexTarget = "line"
+regexes = [
+    '''^\s*public static let ansiKeypadClear = X11KeySymbols\.XK_Clear\s*$''',
+    '''^\s*public static let ansiKeypadEquals = X11KeySymbols\.XK_KP_Equal\s*$''',
+    '''^\s*public static let ansiKeypadDivide = X11KeySymbols\.XK_KP_Divide\s*$''',
+    '''^\s*public static let ansiKeypadMinus = X11KeySymbols\.XK_KP_Subtract\s*$''',
+    '''^\s*public static let ansiKeypadPlus = X11KeySymbols\.XK_KP_Add\s*$''',
+    '''^\s*public static let ansiKeypadEnter = X11KeySymbols\.XK_KP_Enter\s*$''',
+]

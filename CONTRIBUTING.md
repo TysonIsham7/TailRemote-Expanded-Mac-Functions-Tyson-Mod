@@ -1,6 +1,6 @@
 # Working on this fork
 
-This fork keeps TailRemote a small, direct iPhone-to-Mac remote. Preserve its constraints: no hosted backend, no relay, no analytics, and passwords stored only in the device-local Keychain when Remember password is enabled.
+This fork keeps TailRemote a small, direct iPhone-and-iPad client for a Mac. Preserve its constraints: no hosted backend, no relay, no analytics, and passwords stored only in the device-local Keychain when Remember password is enabled.
 
 This copy does not collect issues or pull requests for the original project. If your devices are not compatible, fork this repo and have your own agents make it work for your devices.
 
@@ -8,7 +8,7 @@ This copy does not collect issues or pull requests for the original project. If 
 
 1. Keep each change focused on one problem.
 2. Add or update tests for geometry, input, and connection-state changes.
-3. Never commit hostnames, IP addresses, usernames, passwords, signing teams, provisioning profiles, or certificates.
+3. Never commit hostnames, IP addresses, usernames, passwords, signing teams, provisioning profiles, or certificates. Put a team and bundle ID in gitignored `Config/Local.xcconfig`. Run `scripts/install-git-hooks.sh` once so `scripts/check-no-personal-details.sh` blocks those values on commit and on push.
 4. Run the simulator test suite and record which physical devices you actually tried.
 
 ## Development setup
@@ -18,7 +18,7 @@ This copy does not collect issues or pull requests for the original project. If 
 3. Run `xcodegen generate` after changing `project.yml`.
 4. Open `TailRemote.xcodeproj` and build the `TailRemote` scheme.
 
-The checked-in bundle ID `com.example.tailremote` is a placeholder. Replace it with an ID you control before you install the app. Do not pass a global `PRODUCT_BUNDLE_IDENTIFIER` override: Xcode also applies it to package frameworks, which makes iOS reject duplicate bundle IDs. The upstream app's identifier, `com.waack.TailRemote`, belongs to that project.
+The checked-in bundle ID `com.example.tailremote` is a placeholder in `Config/Shared.xcconfig`. Override it from gitignored `Config/Local.xcconfig` before you install. Do not pass a global `PRODUCT_BUNDLE_IDENTIFIER` override: Xcode also applies it to package frameworks, which makes iOS reject duplicate bundle IDs. The upstream app's identifier, `com.waack.TailRemote`, belongs to that project.
 
 The generated Xcode project is tracked. Include it in the same change whenever `project.yml` modifies the project structure or build settings.
 
@@ -31,7 +31,7 @@ xcodebuild -project TailRemote.xcodeproj \
   test
 ```
 
-If that simulator is unavailable, substitute an installed iPhone simulator from `xcrun simctl list devices available`.
+If that simulator is unavailable, substitute an installed iPhone or iPad simulator from `xcrun simctl list devices available`.
 
 ## Code style
 
