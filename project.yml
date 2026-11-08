@@ -25,11 +25,11 @@ targets:
         Debug: Config/Shared.xcconfig
         Release: Config/Shared.xcconfig
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.tailremote
+        PRODUCT_BUNDLE_IDENTIFIER: $(TAILREMOTE_BUNDLE_IDENTIFIER)
         PRODUCT_NAME: TailRemote
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
