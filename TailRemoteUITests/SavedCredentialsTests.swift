@@ -5,10 +5,7 @@ final class SavedCredentialsTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--test-credentials", "--reset-credential-test"]
         app.launch()
-        let password = app.secureTextFields["remote-password"]
-        XCTAssertTrue(password.waitForExistence(timeout: 5))
-        password.tap()
-        password.typeText("synthetic-ui-password\n")
+        typePassword("synthetic-ui-password\n", in: app)
         let end = app.buttons["End"]
         XCTAssertTrue(end.waitForExistence(timeout: 5))
         end.tap()
@@ -41,9 +38,7 @@ final class SavedCredentialsTests: XCTestCase {
         XCTAssertTrue(connect.waitForExistence(timeout: 5))
         XCTAssertFalse(connect.isEnabled)
 
-        let password = app.secureTextFields["remote-password"]
-        password.tap()
-        password.typeText("synthetic-ui-password\n")
+        typePassword("synthetic-ui-password\n", in: app)
         let end = app.buttons["End"]
         XCTAssertTrue(end.waitForExistence(timeout: 5))
         end.tap()
@@ -74,5 +69,16 @@ final class SavedCredentialsTests: XCTestCase {
         rememberAfterRelaunch.tap()
         XCTAssertFalse(connect.isEnabled, "Re-enabling Remember must not bring back a forgotten password")
         app.terminate()
+    }
+
+    private func typePassword(_ text: String, in app: XCUIApplication) {
+        // Credential UI tests use a plain field. A secure field's AutoFill sheet
+        // never reports keyboard focus, so typeText cannot reach it.
+        let field = app.textFields["remote-password"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        if !app.keyboards.firstMatch.exists {
+            field.tap()
+        }
+        field.typeText(text)
     }
 }

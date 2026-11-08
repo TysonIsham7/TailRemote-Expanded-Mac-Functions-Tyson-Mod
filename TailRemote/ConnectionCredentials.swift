@@ -11,13 +11,22 @@ final class ConnectionCredentials: ObservableObject {
         self.store = store
     }
 
+    /// Drops a load or delete banner without touching the password the user already typed.
+    func clearPresentedError() {
+        errorMessage = nil
+    }
+
     func load(for key: RemoteCredentialKey, rememberPassword: Bool) {
         // Never carry one Mac/account's password into another connection form.
+        let typed = password
         password = ""
         errorMessage = nil
         guard rememberPassword else { return }
         do {
             password = try store.password(for: key) ?? ""
+        } catch let error as KeychainError where error.isCancelled {
+            password = typed
+            errorMessage = "Couldn’t unlock the saved password. You can enter it again."
         } catch {
             errorMessage = "Couldn’t load the saved password. You can enter it again."
         }

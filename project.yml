@@ -7,8 +7,7 @@ options:
 
 packages:
   RoyalVNCKit:
-    url: https://github.com/royalapplications/royalvnc.git
-    revision: 0a76294a7cdc8616b2eea5fba958415e544ed34b
+    path: ThirdParty/royalvnc
 
 targets:
   TailRemote:
@@ -22,15 +21,17 @@ targets:
       - package: RoyalVNCKit
         embed: true
     settings:
+      configFiles:
+        Debug: Config/Shared.xcconfig
+        Release: Config/Shared.xcconfig
       base:
-        TAILREMOTE_BUNDLE_IDENTIFIER: com.example.tailremote
         PRODUCT_BUNDLE_IDENTIFIER: $(TAILREMOTE_BUNDLE_IDENTIFIER)
         PRODUCT_NAME: TailRemote
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_STYLE: Automatic
         SWIFT_VERSION: "5.0"
-        TARGETED_DEVICE_FAMILY: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: NO
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: TailRemote
@@ -39,8 +40,10 @@ targets:
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UIRequiresFullScreen: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
 
