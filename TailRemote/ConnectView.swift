@@ -442,11 +442,10 @@ struct ConnectView: View {
     }
 
     private func loadPassword() {
-        let returnedGracefully = session.takeGracefulClose()
+        // load() clears a banner left from before this read, then reports a
+        // failure of this read. A graceful End must not hide that new failure.
+        _ = session.takeGracefulClose()
         credentials.load(for: credentialKey, rememberPassword: rememberPassword)
-        if returnedGracefully {
-            credentials.clearPresentedError()
-        }
     }
 
     private func setRememberPassword(_ enabled: Bool) {

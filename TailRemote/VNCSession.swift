@@ -354,7 +354,8 @@ final class VNCSession: NSObject, ObservableObject, VNCConnectionDelegate, Remot
     }
 
     /// True once after the user ends a session, or the peer closes it without a real failure.
-    /// The connect form uses this to drop a password-load banner left over from before the session.
+    /// The connect form consumes this so one close is observed once. It does not decide
+    /// whether a password reload error stays on screen.
     func takeGracefulClose() -> Bool {
         let pending = gracefulClosePending
         gracefulClosePending = false
@@ -481,12 +482,20 @@ final class VNCSession: NSObject, ObservableObject, VNCConnectionDelegate, Remot
             pendingDirtyRects.removeAll()
         }
 
-        let composed = frameComposer.apply(
-            source: framebuffer.surfaceAddress,
-            width: width,
-            height: height,
-            dirtyRects: rects
-        ) ?? framebuffer.cgImage
+        // Decode writes this surface on another task. Hold the same read lock
+        // RoyalVNCKit uses for cgImage, and release it before that fallback
+        // locks again. The malloc allocator's lock is not recursive.
+        let copied: CGImage? = {
+            framebuffer.allocator.lockReadOnly()
+            defer { framebuffer.allocator.unlockReadOnly() }
+            return frameComposer.apply(
+                source: framebuffer.surfaceAddress,
+                width: width,
+                height: height,
+                dirtyRects: rects
+            )
+        }()
+        let composed = copied ?? framebuffer.cgImage
         if let image = composed {
             framebufferImage = image
             updatePointerSpace(bitmap: CGSize(width: CGFloat(image.width), height: CGFloat(image.height)))

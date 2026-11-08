@@ -1,6 +1,6 @@
 # TailRemote features
 
-Reference for anyone building a hands-on test checklist. It describes what `main` does today, based on the code in `TailRemote/` (mainly `RemoteDesktopView.swift`, `RemoteCanvasView.swift`, `RemoteKeyboardBridge.swift`, `VNCSession.swift`). Anything not in `main` is listed under **Unconfirmed / local-only** at the end.
+Reference for anyone building a hands-on test checklist. It describes what this tree does today, based on the code in `TailRemote/` (mainly `RemoteDesktopView.swift`, `RemoteCanvasView.swift`, `RemoteKeyboardBridge.swift`, `VNCSession.swift`).
 
 Screen terms used below:
 - **Toolbar**: the bottom bar during a session: Keyboard, Trackpad, Spotlight, More (Paste, Prev, Next), Scroll, Keys, Hide. It scrolls sideways when it does not fit.
@@ -54,8 +54,8 @@ Screen terms used below:
 - **Two-finger drag at 1×:** sends vertical scroll-wheel steps.
 - **Scroll button** (toolbar): turns one-finger drag into scrolling, both vertical and horizontal, whichever direction is larger. A pill shows "ONE FINGER SCROLLS". The setting is remembered across launches.
 
-**Expected:** You need at least 10 pt of finger travel to send scroll steps. Each event sends 1 step per 10 pt, **capped at 6 steps** (see Unconfirmed). Scroll mode leftovers reset when your finger lifts.
-**Limits:** Two-finger scroll is vertical only. While zoomed in, two-finger drag pans instead of scrolling. A double-tap-select drag always moves the pointer, even in Scroll mode.
+**Expected:** Finger scroll sends one wheel detent per 4 points of travel, or per 2 points while Scroll mode is on, and keeps the unused fraction. A long swipe is not cut to 6 steps. Scroll mode leftovers reset when your finger lifts.
+**Limits:** Two-finger scroll is vertical only. While zoomed in, two-finger drag pans instead of scrolling. A double-tap-select drag always moves the pointer, even in Scroll mode. Trackpad and mouse-wheel scrolling use 10-point steps with no per-event cap.
 **Verify:** In Safari, slow two-finger drag, then a long fast one: watch whether fast swipes feel capped. Turn Scroll on: one-finger drag should scroll and sideways drag should scroll sideways. Turn Scroll off: one-finger drag should move the pointer again. Relaunch: Scroll mode should keep its last setting.
 
 ## 6. Pinch zoom, pan, edge-follow
@@ -101,14 +101,14 @@ Screen terms used below:
 
 ## 11. Clipboard
 
-**What it does:** RoyalVNCKit clipboard redirection is turned **on** in the connection settings (`isClipboardRedirectionEnabled: true`). `main` has no explicit Paste button.
-**Verify:** Copy text on the iPhone, then use ⌘V from the Keys row in a Mac text field and see if it arrives. Also copy on the Mac and check the iPhone clipboard. Record the result either way: whether it works isn't confirmed.
+**What it does:** Clipboard redirection is on, so text can move both ways during a session. Paste, under More, types the iPhone pasteboard into the focused Mac field one character at a time. A newline is sent as Return. The client does not send the VNC clipboard message ahead of Command-V.
+**Verify:** Copy on the iPhone, focus a Mac text field, and tap Paste. Copy on the Mac and check the iPhone pasteboard. ⌘V on the Keys row is a separate shortcut.
 
 ## 12. Disconnect and reconnect
 
-**What it does:** End disconnects cleanly. When the connection drops, the app clears the session and forgets the in-memory password. A remembered password stays in the Keychain.
-**Limits:** `main` has **no automatic reconnect**. After backgrounding, a phone lock, a network change or the Mac sleeping, expect to see Disconnected and reconnect by hand.
-**Verify:** Background the app for 30 s, lock the phone for 2 min, switch Wi-Fi to cellular, and sleep the Mac. For each, note what the app shows and whether reconnecting by hand works.
+**What it does:** End disconnects and does not reconnect. While a session is on screen, leaving the app keeps the socket for iOS's short background window. When that window ends, or the Mac drops the connection, opening the app again reconnects with the Keychain password if Remember password is on.
+**Limits:** There is no continuous background mode. If the phone is locked, the Keychain read can fail; the connect form then shows that error and an empty password. With Remember password off, reconnect by hand.
+**Verify:** With Remember on, background the app until iOS suspends it, then open it and confirm it signs in again. Tap End and confirm it stays on the connect screen. Lock the phone, End the session, and confirm a failed unlock is visible instead of a blank form with no error.
 
 ## 13. Known limits (from README)
 
@@ -130,18 +130,6 @@ No Mac-to-iPhone audio, no file transfer, no Face ID for remote Passkeys, iOS 17
 
 ---
 
-## Unconfirmed / local-only (pending until pushed)
+## Not in this tree
 
-These items come from the task "TailRemote: test feedback batch 1 on iPhone" and recent notes. They are on a local branch (`feedback-batch-1`) and are **not in `main`** as of this commit. Treat them as pending until they're pushed, then move them into the sections above.
-
-| Item | Status on `main` |
-| --- | --- |
-| Scroll fix (batch 1) | Pending. `main` still caps each scroll event at 6 steps (two-finger and one-finger) |
-| Fix for the 6-step cap on long swipes | Pending. The cap is still in `RemoteCanvasView.swift` |
-| Trackpad changes (batch 1) | Pending. `main` has the gestures in section 4 only |
-| Trackpad mode panel | Not in `main` |
-| Spotlight (Command-Space) toolbar button | In the session toolbar on iPhone and iPad |
-| Logout (batch 1) | Pending. `main` has only End (disconnect) |
-| Passwords (batch 1) | Pending. `main` behavior is described in section 2 |
-| Reconnect (batch 1) | Pending. `main` has no automatic reconnect |
-| Paste (batch 1) | Pending. `main` has clipboard redirection on but no Paste button |
+Finger scroll, the trackpad panel, Paste, Spotlight, and background reconnect are in this tree. See sections 5, 8, 11, 12, and 14. There is no separate Logout control. End is the disconnect.

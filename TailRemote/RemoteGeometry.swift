@@ -278,14 +278,7 @@ enum RemoteGeometry {
 }
 
 enum RemoteScroll {
-    /// Finger points that produce one wheel detent.
-    ///
-    /// One-finger scroll arrived in 1be357e. Each pan sample sent at most six
-    /// detents (`min(distance / 10, 6)`) and then discarded the rest of that
-    /// sample. A thumb swipe UIKit delivered as one translation — which is what
-    /// happens when a full-frame copy stalls the main thread — therefore moved
-    /// the Mac by only six lines. Four points per detent, with the unused
-    /// fraction kept, is forty detents for a 160-point swipe.
+    /// Finger points that produce one wheel detent. A long swipe is not capped.
     static let pointsPerDetent: CGFloat = 4
     /// Scroll mode uses the same wheel path at twice the speed.
     static let scrollModePointsPerDetent: CGFloat = pointsPerDetent / 2

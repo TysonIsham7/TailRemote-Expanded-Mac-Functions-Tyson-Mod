@@ -1,13 +1,20 @@
 #!/bin/sh
-# Copy the pinned RoyalVNCKit checkout and add the Screen Sharing scale message.
-# TailRemote asks for a smaller picture through that message. Re-run this if
-# ThirdParty/royalvnc is missing. The app switch is RemotePictureScale in VNCSession.swift.
+# Build ThirdParty/royalvnc from the pinned RoyalVNCKit commit and add the
+# Screen Sharing scale message. The app sends that scale from
+# VNCSession.appleServerScale. A value of 1 sends nothing.
+# The committed tree is the source of truth. Re-running this over it deletes
+# those edits, so the script stops when VENDORED.md is already there.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 src="$root/.derived/SourcePackages/checkouts/royalvnc"
 dest="$root/ThirdParty/royalvnc"
 revision=0a76294a7cdc8616b2eea5fba958415e544ed34b
+
+if [ -f "$dest/VENDORED.md" ]; then
+  printf '%s\n' "ThirdParty/royalvnc is already vendored. Edit it in place. Re-running this script would delete those edits." >&2
+  exit 1
+fi
 
 if [ ! -d "$src/Sources/RoyalVNCKit" ]; then
   src=$(mktemp -d)/royalvnc
