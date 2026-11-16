@@ -1,5 +1,5 @@
 {
-  "originHash" : "6e99691cf8f4d78a22580c6b1eb18b0f4fa2272c6dcf779325e773ee1f8e7a90",
+  "originHash" : "3050419e676a156084e0920aef51b2fb559fe3681cd911ebd9a660b327e941dd",
   "pins" : [
     {
       "identity" : "cryptoswift",
@@ -17,15 +17,6 @@
       "state" : {
         "revision" : "a47f4ecf3a139ac2f53ed27a984853c9f98097f1",
         "version" : "1.0.6"
-      }
-    },
-    {
-      "identity" : "royalvnc",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/royalapplications/royalvnc.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "0a76294a7cdc8616b2eea5fba958415e544ed34b"
       }
     }
   ],

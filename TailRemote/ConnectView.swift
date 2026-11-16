@@ -1,7 +1,10 @@
 import SwiftUI
+import UIKit
 import UniformTypeIdentifiers
 
 struct ConnectView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @EnvironmentObject private var session: VNCSession
     @AppStorage("remoteHost") private var host = ""
     @AppStorage("remoteUsername") private var username = ""
@@ -9,7 +12,9 @@ struct ConnectView: View {
     @StateObject private var credentials: ConnectionCredentials
     @StateObject private var savedMacs: SavedMacs
     @State private var showsMacEditor = false
+    @State private var showsMacChoices = false
     @State private var showsImporter = false
+    @FocusState private var passwordFocused: Bool
     @State private var draftHost = ""
     @State private var draftName = ""
     @State private var draftUsername = ""
@@ -17,8 +22,20 @@ struct ConnectView: View {
 
     private let port: UInt16 = 5900
 
+    private var usesPadLayout: Bool {
+        horizontalSizeClass == .regular && verticalSizeClass == .regular
+    }
+
     init(passwordStore: any RemotePasswordStoring = KeychainPasswordStore(), defaults: UserDefaults = .standard) {
-        _credentials = StateObject(wrappedValue: ConnectionCredentials(store: passwordStore))
+        let credentials = ConnectionCredentials(store: passwordStore)
+        let host = defaults.string(forKey: "remoteHost") ?? ""
+        let username = defaults.string(forKey: "remoteUsername") ?? ""
+        let remember = (defaults.object(forKey: "rememberPassword") as? Bool) ?? true
+        credentials.load(
+            for: RemoteCredentialKey(hostname: host, port: 5900, username: username),
+            rememberPassword: remember
+        )
+        _credentials = StateObject(wrappedValue: credentials)
         _savedMacs = StateObject(wrappedValue: SavedMacs(defaults: defaults))
     }
 
@@ -26,18 +43,24 @@ struct ConnectView: View {
         ZStack {
             AppTheme.ink.ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    header
-                    connectionCard
-                    controlsHint
-                }
-                .frame(maxWidth: 540)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 32)
+            VStack(alignment: .leading, spacing: 28) {
+                header
+                connectionCard
+                controlsHint
+            }
+            .frame(maxWidth: usesPadLayout ? 640 : 540)
+            .padding(.horizontal, 24)
+            .padding(.vertical, usesPadLayout ? 48 : 32)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .onAppear {
+            releasePasswordFocus()
+            prepareMacs()
+            // Returning from a session can restore focus and cover the form.
+            DispatchQueue.main.async {
+                releasePasswordFocus()
             }
         }
-        .onAppear(perform: prepareMacs)
         .onChange(of: credentialKey) { _, _ in loadPassword() }
         .onChange(of: username) { _, value in
             savedMacs.remember(hostname: host, username: value)
@@ -89,24 +112,43 @@ struct ConnectView: View {
 
             VStack(spacing: 12) {
                 fieldLabel("MAC")
+                // Above the scrolling fields. A control inside the ScrollView has
+                // no activation point, so a tap never opens the list.
                 macPicker
+            }
 
+            ScrollView {
+                credentialFields
+            }
+            .scrollDismissesKeyboard(.immediately)
+            .frame(maxHeight: .infinity)
+        }
+        .padding(20)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(AppTheme.panel)
+        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(.white.opacity(0.07), lineWidth: 1)
+        }
+    }
+
+    private var credentialFields: some View {
+        VStack(spacing: 18) {
+            VStack(spacing: 12) {
                 fieldLabel("MAC USERNAME")
                 TextField("Mac username", text: $username)
                     .accessibilityIdentifier("remote-username")
-                    .textContentType(.username)
+                    // An unset content type is inferred. "username" in the label
+                    // makes iOS treat this as a login and offer to save the password.
+                    .textContentType(.nickname)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .font(.system(.body, design: .monospaced))
                     .inputStyle()
 
                 fieldLabel("PASSWORD")
-                SecureField("Mac login password", text: $credentials.password)
-                    .accessibilityIdentifier("remote-password")
-                    .textContentType(.password)
-                    .submitLabel(.go)
-                    .inputStyle()
-                    .onSubmit(connect)
+                passwordField
             }
 
             if let importError {
@@ -123,7 +165,7 @@ struct ConnectView: View {
                 .accessibilityIdentifier("remember-password")
                 .tint(AppTheme.tailBlue)
                 .font(.subheadline)
-                Text("Stored securely on this iPhone after signing in. Turn off to forget it.")
+                Text("Stored securely on this \(AppTheme.deviceName) after signing in. Turn off to forget it.")
                     .font(.caption)
                     .foregroundStyle(AppTheme.muted)
             }
@@ -159,13 +201,6 @@ struct ConnectView: View {
             .disabled(host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || credentials.password.isEmpty)
             .opacity(credentials.password.isEmpty ? 0.45 : 1)
         }
-        .padding(20)
-        .background(AppTheme.panel)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .stroke(.white.opacity(0.07), lineWidth: 1)
-        }
     }
 
     private var controlsHint: some View {
@@ -179,34 +214,76 @@ struct ConnectView: View {
     }
 
     private var macPicker: some View {
-        Menu {
-            ForEach(savedMacs.macs) { mac in
-                Button {
-                    select(mac)
-                } label: {
-                    Label(mac.name, systemImage: savedMacs.matching(host)?.id == mac.id ? "checkmark" : "desktopcomputer")
+        VStack(spacing: 8) {
+            Button {
+                showsMacChoices.toggle()
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "desktopcomputer")
+                        .foregroundStyle(AppTheme.tailBlue)
+                    Text(savedMacs.matching(host)?.name ?? "Choose a Mac")
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: showsMacChoices ? "chevron.up" : "chevron.down")
+                        .font(.caption)
                 }
-                .accessibilityIdentifier("saved-mac-\(mac.id)")
+                .inputStyle()
+                .contentShape(Rectangle())
             }
-            Divider()
-            if !host.isEmpty {
-                Button("Connection details", systemImage: "pencil") { editMac() }
+            // A system menu is a pop-up button. Inside the form's scroll view it
+            // never activates, so the saved Macs are not reachable. These are
+            // ordinary buttons with real hit targets.
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("mac-picker")
+
+            if showsMacChoices {
+                VStack(spacing: 4) {
+                    ForEach(savedMacs.macs) { mac in
+                        macChoice(mac)
+                    }
+                    if !host.isEmpty {
+                        macAction("Connection details", systemImage: "pencil") { editMac() }
+                    }
+                    macAction("Add a Mac", systemImage: "plus") { editMac(isNew: true) }
+                    macAction("Import Tailscale Macs", systemImage: "square.and.arrow.down") { showsImporter = true }
+                }
             }
-            Button("Add a Mac", systemImage: "plus") { editMac(isNew: true) }
-            Button("Import Tailscale Macs", systemImage: "square.and.arrow.down") { showsImporter = true }
-        } label: {
-            HStack {
-                Image(systemName: "desktopcomputer")
-                    .foregroundStyle(AppTheme.tailBlue)
-                Text(savedMacs.matching(host)?.name ?? "Choose a Mac")
-                    .lineLimit(1)
-                Spacer()
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption)
-            }
-            .inputStyle()
         }
-        .accessibilityIdentifier("mac-picker")
+    }
+
+    private func macChoice(_ mac: SavedMac) -> some View {
+        Button {
+            select(mac)
+            showsMacChoices = false
+        } label: {
+            Label(mac.name, systemImage: savedMacs.matching(host)?.id == mac.id ? "checkmark" : "desktopcomputer")
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(AppTheme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .background(AppTheme.ink.opacity(0.45))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("saved-mac-\(mac.id)")
+    }
+
+    private func macAction(_ title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button {
+            showsMacChoices = false
+            action()
+        } label: {
+            Label(title, systemImage: systemImage)
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(AppTheme.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .frame(height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var macEditor: some View {
@@ -295,15 +372,69 @@ struct ConnectView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// UI tests launch with --test-credentials. Password AutoFill can take a secure
+    /// field there and leave it without keyboard focus, so tests type into a plain
+    /// field with the same identifier. Users always get the SecureField.
+    private var suppressesPasswordAutofill: Bool {
+        ProcessInfo.processInfo.arguments.contains("--test-credentials")
+    }
+
+    @ViewBuilder
+    private var passwordField: some View {
+        if suppressesPasswordAutofill {
+            TextField("Mac login password", text: $credentials.password)
+                .accessibilityIdentifier("remote-password")
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($passwordFocused)
+                .submitLabel(.go)
+                .inputStyle()
+                .onSubmit {
+                    releasePasswordFocus()
+                    connect()
+                }
+        } else {
+            SecureField("Mac login password", text: $credentials.password)
+                .accessibilityIdentifier("remote-password")
+                // Nil is inferred as a password, and iOS then covers the screen
+                // with Save / Not Now. A one-time code is still masked entry,
+                // and Remember password stores the login.
+                .textContentType(.oneTimeCode)
+                .submitLabel(.go)
+                .focused($passwordFocused)
+                .inputStyle()
+                .onSubmit {
+                    releasePasswordFocus()
+                    connect()
+                }
+        }
+    }
+
+    private func releasePasswordFocus() {
+        passwordFocused = false
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
     private func connect() {
-        savedMacs.remember(hostname: host, username: username)
-        session.connect(
-            hostname: host.trimmingCharacters(in: .whitespacesAndNewlines),
-            port: port,
-            username: username.trimmingCharacters(in: .whitespacesAndNewlines),
-            password: credentials.password,
-            rememberPassword: rememberPassword
-        )
+        releasePasswordFocus()
+        let hostname = host.trimmingCharacters(in: .whitespacesAndNewlines)
+        let account = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        let password = credentials.password
+        let remember = rememberPassword
+        let resolvedPort = port
+        savedMacs.remember(hostname: hostname, username: account)
+        let activeSession = session
+        // Resign the password field before this view is removed. Otherwise the
+        // keyboard stays up with no first responder and covers the session bar.
+        DispatchQueue.main.async {
+            activeSession.connect(
+                hostname: hostname,
+                port: resolvedPort,
+                username: account,
+                password: password,
+                rememberPassword: remember
+            )
+        }
     }
 
     private var credentialKey: RemoteCredentialKey {
@@ -311,6 +442,9 @@ struct ConnectView: View {
     }
 
     private func loadPassword() {
+        // load() clears a banner left from before this read, then reports a
+        // failure of this read. A graceful End must not hide that new failure.
+        _ = session.takeGracefulClose()
         credentials.load(for: credentialKey, rememberPassword: rememberPassword)
     }
 

@@ -65,26 +65,39 @@ final class KeychainPasswordStoreTests: XCTestCase {
         XCTAssertNotEqual(attributes[kSecAttrSynchronizable as String] as? Bool, true)
         XCTAssertNil(attributes[kSecValueData as String])
     }
+
+    func testMissingItemIsDistinctFromACancelledUnlock() {
+        let missing = KeychainError(status: errSecItemNotFound)
+        let cancelled = KeychainError(status: errSecUserCanceled)
+        let failedAuth = KeychainError(status: errSecAuthFailed)
+        XCTAssertTrue(missing.isMissingItem)
+        XCTAssertFalse(missing.isCancelled)
+        XCTAssertTrue(cancelled.isCancelled)
+        XCTAssertTrue(failedAuth.isCancelled)
+        XCTAssertFalse(cancelled.isMissingItem)
+        XCTAssertFalse(KeychainError(status: errSecInteractionNotAllowed).isCancelled)
+    }
 }
 
 final class TestPasswordStore: RemotePasswordStoring {
     var passwords: [RemoteCredentialKey: String] = [:]
     var saveCount = 0
     var shouldFail = false
+    var failureStatus: OSStatus = errSecInteractionNotAllowed
 
     func password(for key: RemoteCredentialKey) throws -> String? {
-        if shouldFail { throw KeychainError(status: errSecInteractionNotAllowed) }
+        if shouldFail { throw KeychainError(status: failureStatus) }
         return passwords[key]
     }
 
     func save(_ password: String, for key: RemoteCredentialKey) throws {
-        if shouldFail { throw KeychainError(status: errSecInteractionNotAllowed) }
+        if shouldFail { throw KeychainError(status: failureStatus) }
         passwords[key] = password
         saveCount += 1
     }
 
     func removePassword(for key: RemoteCredentialKey) throws {
-        if shouldFail { throw KeychainError(status: errSecInteractionNotAllowed) }
+        if shouldFail { throw KeychainError(status: failureStatus) }
         passwords[key] = nil
     }
 }

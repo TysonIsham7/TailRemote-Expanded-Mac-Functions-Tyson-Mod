@@ -1,0 +1,4 @@
+// Public placeholder. Config/Local.xcconfig, when present, overrides these.
+// That file is gitignored. Do not put a team ID or a personal bundle ID here.
+TAILREMOTE_BUNDLE_IDENTIFIER = com.example.tailremote
+#include? "Local.xcconfig"

@@ -9,7 +9,18 @@ build/
 xcuserdata/
 __pycache__/
 
-# Local signing material
+# Vendored RoyalVNCKit is committed (see ThirdParty/royalvnc/VENDORED.md).
+# Ignore only its build output and editor state.
+.build/
+.swiftpm/
+ThirdParty/royalvnc/.build/
+ThirdParty/royalvnc/.swiftpm/
+ThirdParty/royalvnc/.vscode/
+ThirdParty/royalvnc/Design/
+
+# Local signing material. Shared.xcconfig is the public placeholder.
+Config/Local.xcconfig
+Config/denylist.local
 *.mobileprovision
 *.p12
 *.cer

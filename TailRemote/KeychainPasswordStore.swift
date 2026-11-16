@@ -37,7 +37,7 @@ struct KeychainPasswordStore: RemotePasswordStoring {
         request[kSecReturnData as String] = true
         request[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: CFTypeRef?
-        let status = SecItemCopyMatching(request as CFDictionary, &result)
+        let status = perform { SecItemCopyMatching(request as CFDictionary, &result) }
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess else { throw KeychainError(status: status) }
         guard let data = result as? Data, let password = String(data: data, encoding: .utf8) else {
@@ -52,34 +52,56 @@ struct KeychainPasswordStore: RemotePasswordStoring {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
         let request = query(for: key)
-        var status = SecItemUpdate(request as CFDictionary, attributes as CFDictionary)
+        var status = perform { SecItemUpdate(request as CFDictionary, attributes as CFDictionary) }
         if status == errSecItemNotFound {
             let item = request.merging(attributes) { _, new in new }
-            status = SecItemAdd(item as CFDictionary, nil)
+            status = perform { SecItemAdd(item as CFDictionary, nil) }
             if status == errSecDuplicateItem {
-                status = SecItemUpdate(request as CFDictionary, attributes as CFDictionary)
+                status = perform { SecItemUpdate(request as CFDictionary, attributes as CFDictionary) }
             }
         }
         guard status == errSecSuccess else { throw KeychainError(status: status) }
     }
 
     func removePassword(for key: RemoteCredentialKey) throws {
-        let status = SecItemDelete(query(for: key) as CFDictionary)
+        let status = perform { SecItemDelete(query(for: key) as CFDictionary) }
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw KeychainError(status: status)
         }
     }
 
+    /// Rebuilds can return errSecMissingEntitlement (-34018) once, before the
+    /// process is fully entitled. A second attempt on that status only.
+    private func perform(_ operation: () -> OSStatus) -> OSStatus {
+        let status = operation()
+        guard status == KeychainError.missingEntitlement else { return status }
+        return operation()
+    }
+
+    // The app's default access group is intentional. Setting kSecAttrAccessGroup
+    // requires the Keychain Sharing entitlement and would orphan passwords saved
+    // before that group existed. No LAContext is stored or passed in: these items
+    // are unlocked with the device, not Face ID, and a cancelled context reused
+    // for the next read fails every later attempt. A missing item is nil. User
+    // cancel and auth failure throw KeychainError.isCancelled instead.
     private func query(for key: RemoteCredentialKey) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: key.account,
-            kSecAttrSynchronizable as String: false
+            kSecAttrSynchronizable as String: false,
+            kSecUseDataProtectionKeychain as String: true
         ]
     }
 }
 
-struct KeychainError: Error {
+struct KeychainError: Error, Equatable {
     let status: OSStatus
+
+    static let missingEntitlement = OSStatus(-34018)
+
+    var isMissingItem: Bool { status == errSecItemNotFound }
+
+    /// Face ID or a system auth sheet was dismissed or failed. The item may still exist.
+    var isCancelled: Bool { status == errSecUserCanceled || status == errSecAuthFailed }
 }

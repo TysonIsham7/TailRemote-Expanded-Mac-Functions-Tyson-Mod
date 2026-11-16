@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		09AE5CCFC1FD6FA3490791B9 /* RemoteGestureTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 594A845972A03C037672B55C /* RemoteGestureTestView.swift */; };
+		5B0D7E3A9C214F6A8E1B2C01 /* RemoteToolbarTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0D7E3A9C214F6A8E1B2C02 /* RemoteToolbarTestView.swift */; };
+		5B0D7E3A9C214F6A8E1B2C03 /* RemoteToolbarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B0D7E3A9C214F6A8E1B2C04 /* RemoteToolbarTests.swift */; };
 		0A44B0252D348759E06C7169 /* SavedMacsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9138844A9954EAFC9C39B0E /* SavedMacsTests.swift */; };
 		0B79BD71585CE484B2F87E2B /* CredentialTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C7138856B6168B6101E7F3 /* CredentialTestView.swift */; };
 		1126A8F4E09410E21B6F6C12 /* RemoteCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8074CBA02B1C98C506FEF0A4 /* RemoteCanvasView.swift */; };
@@ -28,6 +30,10 @@
 		8F277D1500141C8036A332F3 /* SavedCredentialsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF51CFCA8E4B246A50647FBB /* SavedCredentialsTests.swift */; };
 		AADC534D12452B01245311D1 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = AF36D9C3EDA7E08F9323B2EF /* THIRD_PARTY_NOTICES.md */; };
 		B43E0CDEA8028EB8C6E28E12 /* RemoteKeyboardBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773006B68C596E30C7A15BBD /* RemoteKeyboardBridge.swift */; };
+		E7A1C4D92B08F6531A0E5D44 /* RemoteTrackpad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B2F6C81D4E07A35C8F19B20 /* RemoteTrackpad.swift */; };
+		C8E4A17B2F06D5941A3B70E5 /* RemoteClipboardPaste.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F19D2A84C0B7E3518D4A9C2 /* RemoteClipboardPaste.swift */; };
+		B8D4F2C05E3A4917B2C4D6E8 /* RemoteHardwareKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C3E1B94D2F4806A1B3C5D7 /* RemoteHardwareKeyboard.swift */; };
+		D0F6B4E2705C5139D4E6F80A /* HardwareKeyTranslatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E5A3D16F4B4028C3D5E7F9 /* HardwareKeyTranslatorTests.swift */; };
 		B69A4F3B3BBF02E6423573B4 /* RemoteGestureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F5EFEB31F3706FF4B124574 /* RemoteGestureTests.swift */; };
 		BE8C6E2552EE4A34FA6CDBAE /* RoyalVNCKit in Frameworks */ = {isa = PBXBuildFile; productRef = 452CC833F045616A452F4A83 /* RoyalVNCKit */; };
 		CD0B0BD248B9866C84970288 /* RemoteDesktopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 634414A3D8B57A8BB5AF6C76 /* RemoteDesktopView.swift */; };
@@ -75,8 +81,14 @@
 		53C7138856B6168B6101E7F3 /* CredentialTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialTestView.swift; sourceTree = "<group>"; };
 		590132C4092C3BD77116DDFD /* TailRemoteTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TailRemoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		594A845972A03C037672B55C /* RemoteGestureTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteGestureTestView.swift; sourceTree = "<group>"; };
+		5B0D7E3A9C214F6A8E1B2C02 /* RemoteToolbarTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteToolbarTestView.swift; sourceTree = "<group>"; };
+		5B0D7E3A9C214F6A8E1B2C04 /* RemoteToolbarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteToolbarTests.swift; sourceTree = "<group>"; };
 		634414A3D8B57A8BB5AF6C76 /* RemoteDesktopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDesktopView.swift; sourceTree = "<group>"; };
 		773006B68C596E30C7A15BBD /* RemoteKeyboardBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteKeyboardBridge.swift; sourceTree = "<group>"; };
+		9B2F6C81D4E07A35C8F19B20 /* RemoteTrackpad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteTrackpad.swift; sourceTree = "<group>"; };
+		6F19D2A84C0B7E3518D4A9C2 /* RemoteClipboardPaste.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteClipboardPaste.swift; sourceTree = "<group>"; };
+		A7C3E1B94D2F4806A1B3C5D7 /* RemoteHardwareKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteHardwareKeyboard.swift; sourceTree = "<group>"; };
+		C9E5A3D16F4B4028C3D5E7F9 /* HardwareKeyTranslatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareKeyTranslatorTests.swift; sourceTree = "<group>"; };
 		79BD55E6BF62E1871EF378FE /* KeychainPasswordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainPasswordStoreTests.swift; sourceTree = "<group>"; };
 		7F5EFEB31F3706FF4B124574 /* RemoteGestureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteGestureTests.swift; sourceTree = "<group>"; };
 		8074CBA02B1C98C506FEF0A4 /* RemoteCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteCanvasView.swift; sourceTree = "<group>"; };
@@ -91,6 +103,7 @@
 		F2CBB5AB523FFB7DF52D99A6 /* SavedMacs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedMacs.swift; sourceTree = "<group>"; };
 		F5D256DB8C695C335278EAF0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FF51CFCA8E4B246A50647FBB /* SavedCredentialsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCredentialsTests.swift; sourceTree = "<group>"; };
+		C0FFEE01A11C0A1F16BEEF01 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,6 +131,7 @@
 			children = (
 				4DE3F6FC144179B44E7C790A /* ConnectionCredentialsTests.swift */,
 				79BD55E6BF62E1871EF378FE /* KeychainPasswordStoreTests.swift */,
+				C9E5A3D16F4B4028C3D5E7F9 /* HardwareKeyTranslatorTests.swift */,
 				EF842EC905513DE1F558427C /* RemoteGeometryTests.swift */,
 				D9138844A9954EAFC9C39B0E /* SavedMacsTests.swift */,
 				CD981D2AE81248778C18E1E3 /* VNCSessionTests.swift */,
@@ -129,6 +143,7 @@
 			isa = PBXGroup;
 			children = (
 				7F5EFEB31F3706FF4B124574 /* RemoteGestureTests.swift */,
+				5B0D7E3A9C214F6A8E1B2C04 /* RemoteToolbarTests.swift */,
 				FF51CFCA8E4B246A50647FBB /* SavedCredentialsTests.swift */,
 			);
 			path = TailRemoteUITests;
@@ -147,7 +162,11 @@
 				634414A3D8B57A8BB5AF6C76 /* RemoteDesktopView.swift */,
 				E143ECD47EB1A41E814E6835 /* RemoteGeometry.swift */,
 				594A845972A03C037672B55C /* RemoteGestureTestView.swift */,
+				A7C3E1B94D2F4806A1B3C5D7 /* RemoteHardwareKeyboard.swift */,
 				773006B68C596E30C7A15BBD /* RemoteKeyboardBridge.swift */,
+				6F19D2A84C0B7E3518D4A9C2 /* RemoteClipboardPaste.swift */,
+				9B2F6C81D4E07A35C8F19B20 /* RemoteTrackpad.swift */,
+				5B0D7E3A9C214F6A8E1B2C02 /* RemoteToolbarTestView.swift */,
 				F2CBB5AB523FFB7DF52D99A6 /* SavedMacs.swift */,
 				D089BE7D05C1F6CE1392BE99 /* TailRemoteApp.swift */,
 				8CE94C83448BD353A60F9B7E /* VNCSession.swift */,
@@ -165,9 +184,18 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		A11C0A1F16BEEF01C0FFEE01 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				C0FFEE01A11C0A1F16BEEF01 /* Shared.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		EE279A0BAEBF294119D0695D = {
 			isa = PBXGroup;
 			children = (
+				A11C0A1F16BEEF01C0FFEE01 /* Config */,
 				AF36D9C3EDA7E08F9323B2EF /* THIRD_PARTY_NOTICES.md */,
 				8FB0785E7BD0BF8195B40D72 /* TailRemote */,
 				3B4E8A370816B09D2A04490D /* TailRemoteTests */,
@@ -265,7 +293,7 @@
 			mainGroup = EE279A0BAEBF294119D0695D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				89C0703058790A6DB2A8E500 /* XCRemoteSwiftPackageReference "royalvnc" */,
+				89C0703058790A6DB2A8E500 /* XCLocalSwiftPackageReference "ThirdParty/royalvnc" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C371250B6323C7D1C72EE36F /* Products */;
@@ -298,6 +326,7 @@
 			files = (
 				855AC8DC9E5178F4D3ED9826 /* ConnectionCredentialsTests.swift in Sources */,
 				20694CF014CFDD2A2C30B058 /* KeychainPasswordStoreTests.swift in Sources */,
+				D0F6B4E2705C5139D4E6F80A /* HardwareKeyTranslatorTests.swift in Sources */,
 				5B721FAB275BC82491E52CC0 /* RemoteGeometryTests.swift in Sources */,
 				0A44B0252D348759E06C7169 /* SavedMacsTests.swift in Sources */,
 				2A3B863C6E00C9639D10F2C1 /* VNCSessionTests.swift in Sources */,
@@ -317,7 +346,11 @@
 				CD0B0BD248B9866C84970288 /* RemoteDesktopView.swift in Sources */,
 				353328B7D2C136F54938841A /* RemoteGeometry.swift in Sources */,
 				09AE5CCFC1FD6FA3490791B9 /* RemoteGestureTestView.swift in Sources */,
+				B8D4F2C05E3A4917B2C4D6E8 /* RemoteHardwareKeyboard.swift in Sources */,
 				B43E0CDEA8028EB8C6E28E12 /* RemoteKeyboardBridge.swift in Sources */,
+				C8E4A17B2F06D5941A3B70E5 /* RemoteClipboardPaste.swift in Sources */,
+				E7A1C4D92B08F6531A0E5D44 /* RemoteTrackpad.swift in Sources */,
+				5B0D7E3A9C214F6A8E1B2C01 /* RemoteToolbarTestView.swift in Sources */,
 				720D07E7B944DD46503303A3 /* SavedMacs.swift in Sources */,
 				49B53A9597570CD608E6FFA3 /* TailRemoteApp.swift in Sources */,
 				5E4C489BAA9635075269D4B2 /* VNCSession.swift in Sources */,
@@ -329,6 +362,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B69A4F3B3BBF02E6423573B4 /* RemoteGestureTests.swift in Sources */,
+				5B0D7E3A9C214F6A8E1B2C03 /* RemoteToolbarTests.swift in Sources */,
 				8F277D1500141C8036A332F3 /* SavedCredentialsTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -351,6 +385,7 @@
 /* Begin XCBuildConfiguration section */
 		43BD89F7EA5E624CF204D1A7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0FFEE01A11C0A1F16BEEF01 /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -364,7 +399,9 @@
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TailRemote connects directly to your Mac through your private Tailscale network.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -376,13 +413,13 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
-				TAILREMOTE_BUNDLE_IDENTIFIER = com.example.tailremote;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		5E7BF05B9E550B8BF9199539 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0FFEE01A11C0A1F16BEEF01 /* Shared.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -396,7 +433,9 @@
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "TailRemote connects directly to your Mac through your private Tailscale network.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -408,8 +447,7 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_VERSION = 5.0;
-				TAILREMOTE_BUNDLE_IDENTIFIER = com.example.tailremote;
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -645,26 +683,22 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		89C0703058790A6DB2A8E500 /* XCRemoteSwiftPackageReference "royalvnc" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/royalapplications/royalvnc.git";
-			requirement = {
-				kind = revision;
-				revision = 0a76294a7cdc8616b2eea5fba958415e544ed34b;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		89C0703058790A6DB2A8E500 /* XCLocalSwiftPackageReference "ThirdParty/royalvnc" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ThirdParty/royalvnc;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		452CC833F045616A452F4A83 /* RoyalVNCKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 89C0703058790A6DB2A8E500 /* XCRemoteSwiftPackageReference "royalvnc" */;
+			package = 89C0703058790A6DB2A8E500 /* XCLocalSwiftPackageReference "ThirdParty/royalvnc" */;
 			productName = RoyalVNCKit;
 		};
 		F356B10F416470DE472C9B90 /* RoyalVNCKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 89C0703058790A6DB2A8E500 /* XCRemoteSwiftPackageReference "royalvnc" */;
+			package = 89C0703058790A6DB2A8E500 /* XCLocalSwiftPackageReference "ThirdParty/royalvnc" */;
 			productName = RoyalVNCKit;
 		};
 /* End XCSwiftPackageProductDependency section */

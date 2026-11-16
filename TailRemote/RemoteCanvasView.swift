@@ -14,11 +14,17 @@ struct RemoteClickFeedback {
 protocol RemoteCanvasInput: AnyObject {
     var cursorPoint: CGPoint { get }
     var clickFeedback: PassthroughSubject<RemoteClickFeedback, Never> { get }
-    func movePointer(viewDelta: CGPoint, viewSize: CGSize, zoomScale: CGFloat)
+    func movePointer(viewDelta: CGPoint, viewSize: CGSize, zoomScale: CGFloat, displayScale: CGFloat)
+    func movePointer(toFramebufferPoint point: CGPoint)
     func mouseDown(_ button: VNCMouseButton)
     func mouseUp(_ button: VNCMouseButton)
     func click(_ button: VNCMouseButton, count: Int)
     func scroll(_ wheel: VNCMouseWheel, steps: UInt32)
+    func endScrollGesture()
+}
+
+extension RemoteCanvasInput {
+    func endScrollGesture() {}
 }
 
 struct RemoteCanvasView: UIViewRepresentable {
@@ -72,10 +78,27 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     private var selectionDragActive = false
     private var selectionDragArmedUntil: TimeInterval = 0
     private var scrollRemainder: CGPoint = .zero
+    private var pointerScrollRemainder: CGPoint = .zero
+    private var pointerDragIsDown = false
+    private var dragRecognizer: UILongPressGestureRecognizer?
+    private var pointerDragRecognizer: UIPanGestureRecognizer?
+    private var pointerScrollRecognizer: UIPanGestureRecognizer?
 
     var bottomInset: CGFloat = 0
     var pinsContentToBottom = false
-    var scrollMode = false
+    var scrollMode = false {
+        didSet {
+            guard scrollMode != oldValue else { return }
+            // A long-press drag uses the same finger as one-finger scroll and
+            // used to claim the swipe after a short hold, so most of the
+            // travel never became wheel detents.
+            dragRecognizer?.isEnabled = !scrollMode
+            scrollRemainder = .zero
+            if !scrollMode {
+                session?.endScrollGesture()
+            }
+        }
+    }
 
     private var contentBounds: CGRect {
         let inset = min(max(bottomInset, 0), max(bounds.height - 1, 0))
@@ -92,11 +115,13 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .black
+        clipsToBounds = true
         isMultipleTouchEnabled = true
 
         imageLayer.contentsGravity = .resizeAspect
         imageLayer.magnificationFilter = .linear
         imageLayer.minificationFilter = .trilinear
+        configureFramebufferLayer()
         layer.addSublayer(imageLayer)
 
         clickFeedbackLayer.bounds = CGRect(x: 0, y: 0, width: 36, height: 36)
@@ -164,6 +189,12 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
             panOffset: panOffset
         )
         imageLayer.frame = imageRect
+        // The framebuffer CGImage is already pixels. Leaving contentsScale at 1
+        // makes Core Animation scale that bitmap by the screen scale (2 or 3)
+        // from the top-left. clipsToBounds then keeps only that corner, so the
+        // pointer never reaches the real bottom or right edge. Matching the
+        // screen scale shows the whole desktop at 1x, 2x, and 3x.
+        configureFramebufferLayer()
 
         guard framebufferSize.width > 0, framebufferSize.height > 0 else {
             cursorLayer.isHidden = true
@@ -220,6 +251,10 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         clickFeedbackLayer.add(pulse, forKey: "click")
     }
 
+    private var directTouch: NSNumber { NSNumber(value: UITouch.TouchType.direct.rawValue) }
+    private var indirectPointerTouch: NSNumber { NSNumber(value: UITouch.TouchType.indirectPointer.rawValue) }
+    private var pencilTouch: NSNumber { NSNumber(value: UITouch.TouchType.pencil.rawValue) }
+
     private func installGestures() {
         let singleTap = UITapGestureRecognizer(target: self, action: #selector(handleSingleTap))
         singleTap.numberOfTapsRequired = 1
@@ -237,10 +272,12 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         let move = UIPanGestureRecognizer(target: self, action: #selector(handleMove))
         move.minimumNumberOfTouches = 1
         move.maximumNumberOfTouches = 1
+        move.allowedScrollTypesMask = []
 
         let drag = UILongPressGestureRecognizer(target: self, action: #selector(handleDrag))
         drag.minimumPressDuration = 0.45
         drag.allowableMovement = 6
+        dragRecognizer = drag
 
         // A swipe must be free to start as soon as UIKit detects movement.
         // Waiting for the hold used to buffer a large delta and turn slow swipes
@@ -253,12 +290,73 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         let scroll = UIPanGestureRecognizer(target: self, action: #selector(handleScroll))
         scroll.minimumNumberOfTouches = 2
         scroll.maximumNumberOfTouches = 2
+        scroll.allowedScrollTypesMask = []
 
         let pinch = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch))
         pinch.delegate = self
         scroll.delegate = self
 
-        [singleTap, doubleTap, rightClick, move, drag, scroll, pinch].forEach(addGestureRecognizer)
+        let fingerGestures = [singleTap, doubleTap, rightClick, move, drag, scroll, pinch]
+        fingerGestures.forEach {
+            $0.allowedTouchTypes = [directTouch]
+            addGestureRecognizer($0)
+        }
+        installPointerGestures()
+    }
+
+    private func installPointerGestures() {
+        let hover = UIHoverGestureRecognizer(target: self, action: #selector(handlePointerHover))
+        hover.allowedTouchTypes = [indirectPointerTouch]
+        hover.delegate = self
+
+        let pointerDrag = UIPanGestureRecognizer(target: self, action: #selector(handlePointerDrag))
+        pointerDrag.allowedTouchTypes = [indirectPointerTouch]
+        pointerDrag.maximumNumberOfTouches = 1
+        pointerDrag.allowedScrollTypesMask = []
+        pointerDrag.delegate = self
+        pointerDragRecognizer = pointerDrag
+
+        let pointerClick = UITapGestureRecognizer(target: self, action: #selector(handlePointerClick))
+        pointerClick.allowedTouchTypes = [indirectPointerTouch]
+        pointerClick.buttonMaskRequired = .primary
+        pointerClick.numberOfTapsRequired = 1
+
+        let pointerDoubleClick = UITapGestureRecognizer(target: self, action: #selector(handlePointerDoubleClick))
+        pointerDoubleClick.allowedTouchTypes = [indirectPointerTouch]
+        pointerDoubleClick.buttonMaskRequired = .primary
+        pointerDoubleClick.numberOfTapsRequired = 2
+        pointerClick.require(toFail: pointerDoubleClick)
+        pointerClick.require(toFail: pointerDrag)
+        pointerDoubleClick.require(toFail: pointerDrag)
+
+        let pointerRightClick = UITapGestureRecognizer(target: self, action: #selector(handlePointerRightClick))
+        pointerRightClick.allowedTouchTypes = [indirectPointerTouch]
+        pointerRightClick.buttonMaskRequired = .secondary
+
+        // Fingers stay on the touch recognizers. Trackpad and mouse scrolling is a
+        // different touch type, so it cannot fall through to the capped finger path.
+        // A pressed button is a drag, never a wheel. The scroll pan rejects any
+        // event that has a button down, and it will not begin during a primary drag.
+        let pointerScroll = UIPanGestureRecognizer(target: self, action: #selector(handlePointerScroll))
+        pointerScroll.allowedTouchTypes = [
+            NSNumber(value: UITouch.TouchType.indirect.rawValue),
+            indirectPointerTouch,
+        ]
+        pointerScroll.allowedScrollTypesMask = [.continuous, .discrete]
+        pointerScroll.delegate = self
+        pointerScrollRecognizer = pointerScroll
+
+        let pencilClick = UITapGestureRecognizer(target: self, action: #selector(handlePencilClick))
+        pencilClick.allowedTouchTypes = [pencilTouch]
+        pencilClick.numberOfTapsRequired = 1
+
+        let pencilDoubleClick = UITapGestureRecognizer(target: self, action: #selector(handlePencilDoubleClick))
+        pencilDoubleClick.allowedTouchTypes = [pencilTouch]
+        pencilDoubleClick.numberOfTapsRequired = 2
+        pencilClick.require(toFail: pencilDoubleClick)
+
+        [hover, pointerDrag, pointerClick, pointerDoubleClick, pointerRightClick, pointerScroll, pencilClick, pencilDoubleClick]
+            .forEach(addGestureRecognizer)
     }
 
     @objc private func handleSingleTap() {
@@ -293,6 +391,7 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
             }
         case .ended, .cancelled, .failed:
             scrollRemainder = .zero
+            session?.endScrollGesture()
             if selectionDragActive {
                 session?.mouseUp(.left)
                 selectionDragActive = false
@@ -329,32 +428,34 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func handleScroll(_ gesture: UIPanGestureRecognizer) {
-        guard gesture.state == .began || gesture.state == .changed else { return }
-        let translation = gesture.translation(in: self)
-
-        if isPinching {
+        switch gesture.state {
+        case .began, .changed:
+            let translation = gesture.translation(in: self)
             gesture.setTranslation(.zero, in: self)
-            return
-        }
 
-        if zoomScale > RemoteGeometry.minimumZoomScale {
-            let baseImageRect = fittedImageRect()
-            panOffset = RemoteGeometry.clampedPanOffset(
-                CGPoint(x: panOffset.x + translation.x, y: panOffset.y + translation.y),
-                baseRect: baseImageRect,
-                viewportRect: interactionViewport,
-                zoomScale: zoomScale
-            )
-            gesture.setTranslation(.zero, in: self)
-            layoutRemoteContent()
-            return
-        }
+            if isPinching {
+                return
+            }
 
-        guard abs(translation.y) >= 10 else { return }
-        let wheel: VNCMouseWheel = translation.y < 0 ? .down : .up
-        let steps = UInt32(min(max(Int(abs(translation.y) / 10), 1), 6))
-        session?.scroll(wheel, steps: steps)
-        gesture.setTranslation(.zero, in: self)
+            if zoomScale > RemoteGeometry.minimumZoomScale {
+                let baseImageRect = fittedImageRect()
+                panOffset = RemoteGeometry.clampedPanOffset(
+                    CGPoint(x: panOffset.x + translation.x, y: panOffset.y + translation.y),
+                    baseRect: baseImageRect,
+                    viewportRect: interactionViewport,
+                    zoomScale: zoomScale
+                )
+                layoutRemoteContent()
+                return
+            }
+
+            emitScroll(translation)
+        case .ended, .cancelled, .failed:
+            scrollRemainder = .zero
+            session?.endScrollGesture()
+        default:
+            break
+        }
     }
 
     @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
@@ -394,6 +495,14 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         }
     }
 
+    private func configureFramebufferLayer() {
+        let screenScale = RemoteGeometry.sanitizedDisplayScale(contentScaleFactor)
+        imageLayer.contentsScale = screenScale
+        imageLayer.contentsGravity = .resizeAspect
+        imageLayer.contentsRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        imageLayer.masksToBounds = true
+    }
+
     private func fittedImageRect() -> CGRect {
         RemoteGeometry.aspectFitRect(
             imageSize: framebufferSize,
@@ -403,27 +512,136 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
     }
 
     private func scrollByDrag(_ translation: CGPoint) {
-        scrollRemainder.x += translation.x
-        scrollRemainder.y += translation.y
-        let vertical = abs(scrollRemainder.y) >= abs(scrollRemainder.x)
-        let distance = vertical ? scrollRemainder.y : scrollRemainder.x
-        guard abs(distance) >= 10 else { return }
-        let wheel: VNCMouseWheel
-        if vertical {
-            wheel = distance < 0 ? .down : .up
-            scrollRemainder.y = 0
-        } else {
-            wheel = distance < 0 ? .right : .left
-            scrollRemainder.x = 0
+        emitScroll(translation, pointsPerDetent: RemoteScroll.scrollModePointsPerDetent)
+    }
+
+    private func emitScroll(
+        _ translation: CGPoint,
+        pointsPerDetent: CGFloat = RemoteScroll.pointsPerDetent
+    ) {
+        guard let tick = RemoteScroll.consume(
+            translation,
+            remainder: &scrollRemainder,
+            pointsPerDetent: pointsPerDetent
+        ) else { return }
+        session?.scroll(Self.wheel(for: tick.direction), steps: UInt32(tick.steps))
+    }
+
+    private static func wheel(for direction: RemoteWheelDirection) -> VNCMouseWheel {
+        switch direction {
+        case .up: .up
+        case .down: .down
+        case .left: .left
+        case .right: .right
         }
-        let steps = UInt32(min(max(Int(abs(distance) / 10), 1), 6))
-        session?.scroll(wheel, steps: steps)
+    }
+
+    @objc private func handlePointerHover(_ gesture: UIHoverGestureRecognizer) {
+        guard gesture.state == .began || gesture.state == .changed else { return }
+        moveAbsolute(to: gesture.location(in: self))
+    }
+
+    @objc private func handlePointerClick(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        clickAbsolute(at: gesture.location(in: self), button: .left, count: 1)
+    }
+
+    @objc private func handlePointerDoubleClick(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        clickAbsolute(at: gesture.location(in: self), button: .left, count: 2)
+    }
+
+    @objc private func handlePointerRightClick(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        clickAbsolute(at: gesture.location(in: self), button: .right, count: 1)
+    }
+
+    @objc private func handlePointerDrag(_ gesture: UIPanGestureRecognizer) {
+        let location = gesture.location(in: self)
+        switch gesture.state {
+        case .began:
+            guard gesture.buttonMask == .primary else { return }
+            moveAbsolute(to: location)
+            session?.mouseDown(.left)
+            pointerDragIsDown = true
+        case .changed:
+            guard pointerDragIsDown else { return }
+            moveAbsolute(to: location)
+        case .ended, .cancelled, .failed:
+            guard pointerDragIsDown else { return }
+            moveAbsolute(to: location)
+            session?.mouseUp(.left)
+            pointerDragIsDown = false
+        default:
+            break
+        }
+    }
+
+    @objc private func handlePointerScroll(_ gesture: UIPanGestureRecognizer) {
+        if pointerDragIsDown || !gesture.buttonMask.isEmpty {
+            pointerScrollRemainder = .zero
+            return
+        }
+        switch gesture.state {
+        case .began, .changed:
+            let translation = gesture.translation(in: self)
+            gesture.setTranslation(.zero, in: self)
+            for event in RemoteScroll.pointerSteps(delta: translation, remainder: &pointerScrollRemainder) {
+                session?.scroll(Self.wheel(for: event.direction), steps: event.steps)
+            }
+        case .ended, .cancelled, .failed:
+            pointerScrollRemainder = .zero
+        default:
+            break
+        }
+    }
+
+    @objc private func handlePencilClick(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        clickAbsolute(at: gesture.location(in: self), button: .left, count: 1)
+    }
+
+    @objc private func handlePencilDoubleClick(_ gesture: UITapGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        clickAbsolute(at: gesture.location(in: self), button: .left, count: 2)
+    }
+
+    private func clickAbsolute(at viewPoint: CGPoint, button: VNCMouseButton, count: Int) {
+        guard moveAbsolute(to: viewPoint) else { return }
+        session?.click(button, count: count)
+    }
+
+    @discardableResult
+    private func moveAbsolute(to viewPoint: CGPoint) -> Bool {
+        guard let session, framebufferSize.width > 0, framebufferSize.height > 0 else { return false }
+        let imageRect = RemoteGeometry.zoomedRect(
+            baseRect: fittedImageRect(),
+            zoomScale: zoomScale,
+            panOffset: panOffset
+        )
+        guard imageRect.width > 0, imageRect.height > 0 else { return false }
+        session.movePointer(
+            toFramebufferPoint: RemoteGeometry.framebufferPoint(
+                fromViewPoint: viewPoint,
+                imageRect: imageRect,
+                framebufferSize: framebufferSize,
+                displayScale: contentScaleFactor
+            )
+        )
+        cursorPoint = session.cursorPoint
+        layoutRemoteContent()
+        return true
     }
 
     private func moveRemotePointer(by delta: CGPoint) {
         guard let session else { return }
         let baseImageRect = fittedImageRect()
-        session.movePointer(viewDelta: delta, viewSize: baseImageRect.size, zoomScale: zoomScale)
+        session.movePointer(
+            viewDelta: delta,
+            viewSize: baseImageRect.size,
+            zoomScale: zoomScale,
+            displayScale: contentScaleFactor
+        )
         cursorPoint = session.cursorPoint
 
         guard zoomScale > RemoteGeometry.minimumZoomScale,
@@ -450,8 +668,55 @@ final class RemoteCanvasUIView: UIView, UIGestureRecognizerDelegate {
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
+        if isPointerDragAndScroll(gestureRecognizer, otherGestureRecognizer) {
+            return false
+        }
+        if gestureRecognizer is UIHoverGestureRecognizer || otherGestureRecognizer is UIHoverGestureRecognizer {
+            return true
+        }
         let pair = [gestureRecognizer, otherGestureRecognizer]
         return pair.contains { $0 is UIPinchGestureRecognizer }
             && pair.contains { $0 is UIPanGestureRecognizer }
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive event: UIEvent) -> Bool {
+        if gestureRecognizer === pointerDragRecognizer {
+            return event.buttonMask == .primary
+        }
+        if gestureRecognizer === pointerScrollRecognizer {
+            if pointerDragIsDown { return false }
+            if let drag = pointerDragRecognizer, drag.state == .began || drag.state == .changed {
+                return false
+            }
+            return event.buttonMask.isEmpty
+        }
+        return true
+    }
+
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        // Only hold a wheel while a primary drag is already tracking. An idle drag
+        // recognizer must not delay buttonless trackpad and mouse-wheel scrolling.
+        guard gestureRecognizer === pointerScrollRecognizer,
+              otherGestureRecognizer === pointerDragRecognizer else {
+            return false
+        }
+        switch otherGestureRecognizer.state {
+        case .began, .changed:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func isPointerDragAndScroll(
+        _ gestureRecognizer: UIGestureRecognizer,
+        _ otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        let pair = [gestureRecognizer, otherGestureRecognizer]
+        return pair.contains { $0 === pointerDragRecognizer }
+            && pair.contains { $0 === pointerScrollRecognizer }
     }
 }

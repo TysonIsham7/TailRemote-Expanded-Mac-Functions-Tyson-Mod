@@ -36,12 +36,19 @@ struct RemoteGestureTestView: UIViewRepresentable {
         private var scrolls = 0
         private var maxViewDelta: CGFloat = 0
 
-        func movePointer(viewDelta: CGPoint, viewSize: CGSize, zoomScale: CGFloat) {
+        func movePointer(toFramebufferPoint point: CGPoint) {
+            cursorPoint = RemoteGeometry.clamp(point, to: Self.framebufferSize)
+            moves += 1
+            publish()
+        }
+
+        func movePointer(viewDelta: CGPoint, viewSize: CGSize, zoomScale: CGFloat, displayScale: CGFloat) {
             let delta = RemoteGeometry.framebufferDelta(
                 fromViewDelta: viewDelta,
                 framebufferSize: Self.framebufferSize,
                 viewSize: viewSize,
-                zoomScale: zoomScale
+                zoomScale: zoomScale,
+                displayScale: displayScale
             )
             cursorPoint = RemoteGeometry.clamp(
                 CGPoint(x: cursorPoint.x + delta.x, y: cursorPoint.y + delta.y),

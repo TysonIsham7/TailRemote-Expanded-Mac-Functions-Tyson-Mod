@@ -1,0 +1,6 @@
+// Copy this file to Config/Local.xcconfig. Git ignores that copy.
+// Set these to the team and bundle ID you use on your own phone.
+// Leave them out of project.yml, the Xcode project, and the README.
+//
+// DEVELOPMENT_TEAM = XXXXXXXXXX
+// TAILREMOTE_BUNDLE_IDENTIFIER = com.example.yourname.tailremote

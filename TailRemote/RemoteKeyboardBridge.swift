@@ -17,8 +17,9 @@ struct RemoteKeyboardBridge: UIViewRepresentable {
     func updateUIView(_ field: RemoteKeyboardTextField, context: Context) {
         bind(field)
 
+        field.wantsFocus = isActive
         if isActive, !field.isFirstResponder {
-            DispatchQueue.main.async { field.becomeFirstResponder() }
+            field.requestFocus()
         } else if !isActive, field.isFirstResponder {
             field.resignFirstResponder()
         }
@@ -51,6 +52,19 @@ final class RemoteKeyboardTextField: UITextField, UITextFieldDelegate {
     var onReturn: (() -> Void)?
     var onDismiss: (() -> Void)?
     private var sentBackspaceAt: CFTimeInterval = 0
+    /// Set from SwiftUI so a late retry never reopens a keyboard that was closed.
+    var wantsFocus = false
+
+    /// A toolbar tap that also changes the layout can land while the field is
+    /// mid-update, and becomeFirstResponder then returns false. Retry a few times.
+    func requestFocus(attempt: Int = 0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + (attempt == 0 ? 0 : 0.1)) { [weak self] in
+            guard let self, self.wantsFocus, !self.isFirstResponder else { return }
+            if !self.becomeFirstResponder(), attempt < 5 {
+                self.requestFocus(attempt: attempt + 1)
+            }
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)

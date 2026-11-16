@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum AppTheme {
     static let ink = Color(red: 0.043, green: 0.051, blue: 0.071)
@@ -9,5 +10,10 @@ enum AppTheme {
     static let tailBlue = Color(red: 0.353, green: 0.549, blue: 1.0)
     static let connected = Color(red: 0.290, green: 0.839, blue: 0.600)
     static let danger = Color(red: 1.0, green: 0.353, blue: 0.404)
+
+    /// iPhone copy stays "iPhone". iPad gets its own noun without changing the phone layout.
+    static var deviceName: String {
+        UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+    }
 }
 

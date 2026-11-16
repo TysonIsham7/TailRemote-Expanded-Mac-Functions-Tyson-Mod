@@ -15,12 +15,15 @@ struct TailRemoteApp: App {
 
 private struct RootView: View {
     @EnvironmentObject private var session: VNCSession
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--test-remote-gestures") {
                 RemoteGestureTestView()
+            } else if ProcessInfo.processInfo.arguments.contains("--test-remote-toolbar") {
+                RemoteToolbarTestView()
             } else if ProcessInfo.processInfo.arguments.contains("--test-credentials") {
                 CredentialTestView()
             } else {
@@ -31,6 +34,16 @@ private struct RootView: View {
             #endif
         }
         .animation(.easeInOut(duration: 0.22), value: session.showsRemoteScreen)
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                session.appDidEnterBackground()
+            case .active:
+                session.appWillEnterForeground()
+            default:
+                break
+            }
+        }
     }
 
     private var connectionView: some View {
