@@ -2,7 +2,7 @@
   <img src="Assets/Brand/tailremote-logo.png" width="112" alt="TailRemote logo">
 </p>
 
-<h1 align="center">TailRemote</h1>
+<h1 align="center">TailRemote - Control Your Mac From Your iPhone</h1>
 
 <p align="center">
   A fork of <a href="https://github.com/C4T4/TailRemote">C4T4/TailRemote</a> by Catalin Waack.
@@ -12,7 +12,7 @@ This repository is a GitHub fork of [C4T4/TailRemote](https://github.com/C4T4/Ta
 
 ## Who this is for
 
-This is for anybody who wants to be able to do things on their Mac while they are remote and away from it.
+This is for anybody who ever wanted to see and manipulate their mac screen on their iPhone screen. To be able to do things they can only do on their Mac while they are remote and away from it.
 
 You stay on your iPhone. The Mac stays where it is. Tailscale carries the connection, and Screen Sharing is what you sign in to.
 
